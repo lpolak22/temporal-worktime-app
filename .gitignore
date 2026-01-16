@@ -9,6 +9,7 @@ __pycache__/
 *.so
 
 requirements.txt
+upute.txt
 
 .vscode/
 .idea/
