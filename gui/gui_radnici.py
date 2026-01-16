@@ -4,7 +4,7 @@ from db.radnici_db import *
 def radnici_window(pozicije, radnici_data):
     heading = ["ID", "Ime", "Prezime", "Pozicija", "Datum zaposlenja"]
     table_data = [[r[0], r[1].split()[0], r[1].split()[1], r[2], r[3]] for r in radnici_data]
-    
+    radnici_data = fetch_radnici()
     layout = [
         [sg.Text("Upravljanje radnicima", font=("Arial", 14))],
         [sg.Frame("Dodavanje novog radnika", [
@@ -67,11 +67,11 @@ def run_radnici_window():
             elif event == "Obriši radnika":
                 selected = values["RADNIK_LISTA"]
                 if selected:
-                    radnik_id = new_data[selected[0]][0]
+                    radnik_id = radnici_data[selected[0]][0]
                     if obrisi_radnika(radnik_id):
                         rad_win["STATUS"].update("Radnik deaktiviran", text_color="white")
-                        new_data = fetch_radnici()
-                        table_data = [[r[0], r[1].split()[0], r[1].split()[1], r[2], r[3]] for r in new_data]
+                        radnici_data = fetch_radnici()
+                        table_data = [[r[0], r[1].split()[0], r[1].split()[1], r[2], r[3]] for r in radnici_data]
                         rad_win["RADNIK_LISTA"].update(values=table_data)
                     else:
                         rad_win["STATUS"].update("Greška pri brisanju!", text_color="orange")
