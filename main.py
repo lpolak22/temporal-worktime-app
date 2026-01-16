@@ -29,6 +29,11 @@ while True:
         import gui.gui_evidencija_satnice as gui_sat
         gui_sat.run_satnice_window()
         window = gui.main_menu()
+    elif event == "Obračun i isplate":
+        window.close()
+        import gui.gui_evidencija_isplate as gui_ispl
+        gui_ispl.run_isplate_window()
+        window = gui.main_menu()
 
 
 window.close()

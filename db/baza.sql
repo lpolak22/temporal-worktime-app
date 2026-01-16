@@ -148,6 +148,91 @@ BEFORE INSERT OR UPDATE ON dnevnik_rada
 FOR EACH ROW
 EXECUTE FUNCTION trg_limit_40_sati_7_dana();
 
+
+CREATE OR REPLACE FUNCTION trg_kreiraj_isplatu_tjedno()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    start_tjedna DATE;
+    end_tjedna DATE;
+    ukupno_sati NUMERIC(10,2);
+    ukupni_trosak NUMERIC(12,2);
+    v_ugovor_id BIGINT;
+    vec_isplata INT;
+BEGIN
+    start_tjedna := date_trunc('week', NEW.datum_rada + INTERVAL '1 day')::DATE;
+    end_tjedna := start_tjedna + INTERVAL '7 days';
+
+    SELECT COUNT(*)
+    INTO vec_isplata
+    FROM isplate
+    WHERE radnik_id = NEW.radnik_id
+      AND datum_isplate >= start_tjedna
+      AND datum_isplate < end_tjedna;
+
+    IF vec_isplata = 0 THEN
+        SELECT a.ugovor_id
+        INTO v_ugovor_id
+        FROM aktivnosti a
+        JOIN dnevnik_rada dr ON a.aktivnost_id = dr.aktivnost_id
+        WHERE dr.radnik_id = NEW.radnik_id
+          AND dr.datum_rada >= start_tjedna
+          AND dr.datum_rada < end_tjedna
+        LIMIT 1;
+
+        IF v_ugovor_id IS NOT NULL THEN
+            SELECT COALESCE(SUM(sati), 0)
+            INTO ukupno_sati
+            FROM dnevnik_rada
+            WHERE radnik_id = NEW.radnik_id
+              AND datum_rada >= start_tjedna
+              AND datum_rada < end_tjedna;
+
+            SELECT COALESCE(SUM(dr.sati * sr.iznos_eur_po_satu),0)
+            INTO ukupni_trosak
+            FROM dnevnik_rada dr
+            JOIN satnice_radnika sr
+              ON sr.radnik_id = dr.radnik_id
+             AND dr.datum_rada >= sr.vrijedi_od
+             AND dr.datum_rada < sr.vrijedi_do
+            WHERE dr.radnik_id = NEW.radnik_id
+              AND dr.datum_rada >= start_tjedna
+              AND dr.datum_rada < end_tjedna;
+
+            INSERT INTO isplate(
+                radnik_id,
+                ugovor_id,
+                datum_isplate,
+                broj_unosa,
+                ukupno_sati,
+                ukupni_trosak
+            )
+            SELECT
+                NEW.radnik_id,
+                v_ugovor_id,
+                end_tjedna::DATE - 1,
+                COUNT(*),
+                ukupno_sati,
+                ukupni_trosak
+            FROM dnevnik_rada
+            WHERE radnik_id = NEW.radnik_id
+              AND datum_rada >= start_tjedna
+              AND datum_rada < end_tjedna;
+        END IF;
+    END IF;
+
+    RETURN NEW;
+END;
+$$;
+
+
+CREATE TRIGGER t_isplata_tjedno
+AFTER INSERT ON dnevnik_rada
+FOR EACH ROW
+EXECUTE FUNCTION trg_kreiraj_isplatu_tjedno();
+
+
 INSERT INTO stanja_aktivnosti(naziv) VALUES ('Nije započeto'), ('U tijeku'), ('Dovršeno');
 INSERT INTO pozicije(naziv) VALUES ('Programer'), ('Voditelj projekta'), ('Računovodstvo');
 
