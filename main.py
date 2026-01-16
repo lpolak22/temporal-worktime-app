@@ -1,5 +1,6 @@
 import gui.gui as gui
 import gui.gui_radnici as gui_radnici
+import gui.gui_ugovori_aktivnost as gui_ua
 import PySimpleGUI as sg
 
 window = gui.main_menu()
@@ -13,5 +14,10 @@ while True:
         window.close()
         gui_radnici.run_radnici_window()
         window = gui.main_menu()
-        
+    
+    elif event == "Ugovori i aktivnosti":
+            window.close()
+            gui_ua.run_ugovori_aktivnosti_window()
+            window = gui.main_menu()
+    
 window.close()
