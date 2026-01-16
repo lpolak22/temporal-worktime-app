@@ -24,5 +24,11 @@ while True:
         window.close()
         gui_er.run_evidencija_rada_window()
         window = gui.main_menu()
+    elif event == "Satnice radnika":
+        window.close()
+        import gui.gui_evidencija_satnice as gui_sat
+        gui_sat.run_satnice_window()
+        window = gui.main_menu()
+
 
 window.close()

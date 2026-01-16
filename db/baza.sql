@@ -162,3 +162,44 @@ INSERT INTO ugovori(narucitelj_id, naziv, datum_pocetka) VALUES (1, 'Razvoj sust
 
 INSERT INTO aktivnosti(ugovor_id, naziv, planirani_sati, stanje_id)
 VALUES (1, 'Implementacija evidencije', 80, 2);
+
+INSERT INTO radnici(ime, prezime, datum_zaposlenja) VALUES
+('Marko', 'Horvat', '2025-02-15'),
+('Ana', 'Kovač', '2025-03-01'),
+('Petar', 'Babić', '2025-01-20');
+
+INSERT INTO radnik_pozicija(radnik_id, pozicija_id) VALUES
+(2, 1),
+(3, 2),
+(4, 3);
+
+INSERT INTO satnice_radnika(radnik_id, vrijedi_od, vrijedi_do, iznos_eur_po_satu) VALUES
+(2, '2025-01-01', 'infinity', 8.0),
+(3, '2025-01-01', 'infinity', 12.0),
+(4, '2025-01-01', 'infinity', 10.0);
+
+INSERT INTO narucitelji(naziv, email, telefon) VALUES
+('Beta d.o.o.', 'info@beta.hr', '012345678'),
+('Gamma d.o.o.', 'kontakt@gamma.hr', '098765432');
+
+INSERT INTO ugovori(narucitelj_id, naziv, datum_pocetka, datum_zavrsetka) VALUES
+(2, 'Razvoj web aplikacije', '2025-12-01', '2026-03-31'),
+(3, 'Implementacija ERP sustava', '2025-11-15', NULL);
+
+INSERT INTO aktivnosti(ugovor_id, naziv, planirani_sati, stanje_id) VALUES
+(2, 'Frontend development', 120, 1),
+(2, 'Backend development', 150, 2),
+(3, 'Analiza poslovnih procesa', 60, 2),
+(3, 'Migracija podataka', 40, 1);
+
+INSERT INTO dnevnik_rada(radnik_id, aktivnost_id, datum_rada, sati, opis) VALUES
+(1, 1, '2025-11-02', 6, 'Postavljanje osnovne strukture baze'),
+(2, 2, '2025-12-02', 7, 'Implementacija API-a'),
+(3, 3, '2025-11-16', 5, 'Sastanak s klijentom i analiza'),
+(4, 4, '2025-11-17', 8, 'Priprema Excel predložaka za migraciju');
+
+INSERT INTO isplate(radnik_id, ugovor_id, broj_unosa, ukupno_sati, ukupni_trosak) VALUES
+(1, 1, 1, 6, 45.00),
+(2, 2, 1, 7, 56.00),
+(3, 3, 1, 5, 60.00),
+(4, 3, 1, 8, 80.00);
