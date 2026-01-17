@@ -41,7 +41,7 @@ def dodaj_radnika(ime, prezime, datum, pozicija):
         return True
     except Exception as e:
         conn.rollback()
-        print(f"Greška: {e}")
+        print(f"Greška kod radnika")
         return False
     finally:
         cur.close()

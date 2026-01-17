@@ -95,7 +95,7 @@ def dodaj_aktivnost(ugovor_id, naziv, sati, stanje):
 
     except Exception as e:
         conn.rollback()
-        print("Greška pri dodavanju aktivnosti:", e)
+        print("Greška pri dodavanju aktivnosti")
         return False
 
     finally:
@@ -123,7 +123,7 @@ def promijeni_stanje(aktivnost_id, novo_stanje):
 
     except Exception as e:
         conn.rollback()
-        print("Greška pri promjeni stanja:", e)
+        print("Greška pri promjeni stanja")
         return False
 
     finally:

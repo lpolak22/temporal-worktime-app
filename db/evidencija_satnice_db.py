@@ -59,7 +59,7 @@ def dodaj_satnicu(radnik_id, vrijedi_od, iznos):
 
     except Exception as e:
         conn.rollback()
-        print("Greška pri unosu satnice:", e)
+        print("Greška kod satnice")
         return str(e)
     finally:
         cur.close()

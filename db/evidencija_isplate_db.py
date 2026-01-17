@@ -5,11 +5,13 @@ def fetch_isplate(radnik_id=None):
     cur = conn.cursor()
     try:
         query = """
-            SELECT i.isplata_id,
-                   r.ime || ' ' || r.prezime,
-                   i.datum_isplate,
-                   i.ukupno_sati,
-                   i.ukupni_trosak
+            SELECT
+                i.isplata_id,
+                i.radnik_id,
+                r.ime || ' ' || r.prezime,
+                i.datum_isplate,
+                i.ukupno_sati,
+                i.ukupni_trosak
             FROM isplate i
             JOIN radnici r ON i.radnik_id = r.radnik_id
         """
@@ -35,6 +37,32 @@ def fetch_radnici_aktivni():
             WHERE aktivan = TRUE
             ORDER BY prezime
         """)
+        return cur.fetchall()
+    finally:
+        cur.close()
+        conn.close()
+
+def fetch_detalji_isplate(radnik_id, od, do):
+    conn = get_connection()
+    cur = conn.cursor()
+    try:
+        cur.execute("""
+            SELECT
+                dr.datum_rada,
+                a.naziv AS aktivnost,
+                dr.sati,
+                sr.iznos_eur_po_satu,
+                (dr.sati * sr.iznos_eur_po_satu) AS iznos
+            FROM dnevnik_rada dr
+            JOIN aktivnosti a ON dr.aktivnost_id = a.aktivnost_id
+            JOIN satnice_radnika sr
+              ON sr.radnik_id = dr.radnik_id
+             AND dr.datum_rada >= sr.vrijedi_od
+             AND dr.datum_rada < sr.vrijedi_do
+            WHERE dr.radnik_id = %s
+              AND dr.datum_rada BETWEEN %s AND %s
+            ORDER BY dr.datum_rada
+        """, (radnik_id, od, do))
         return cur.fetchall()
     finally:
         cur.close()

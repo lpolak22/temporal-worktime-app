@@ -74,6 +74,6 @@ def run_radnici_window():
                         table_data = [[r[0], r[1].split()[0], r[1].split()[1], r[2], r[3]] for r in radnici_data]
                         rad_win["RADNIK_LISTA"].update(values=table_data)
                     else:
-                        rad_win["STATUS"].update("Greška pri brisanju!", text_color="orange")
+                        rad_win["STATUS"].update("Greška pri brisanju", text_color="orange")
                 else:
                     rad_win["STATUS"].update("Odaberi radnika!", text_color="orange")

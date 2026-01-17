@@ -20,10 +20,15 @@ def fetch_aktivnosti():
     cur = conn.cursor()
     cur.execute("""
         SELECT a.aktivnost_id,
-               a.naziv || ' (' || u.naziv || ')'
+        a.naziv || ' (' || u.naziv || ')'
         FROM aktivnosti a
         JOIN ugovori u ON a.ugovor_id = u.ugovor_id
-        ORDER BY a.naziv
+        JOIN stanja_aktivnosti s ON a.stanje_id = s.stanje_id
+        WHERE s.naziv = 'U tijeku'
+        AND CURRENT_DATE >= u.datum_pocetka
+        AND (u.datum_zavrsetka IS NULL OR CURRENT_DATE <= u.datum_zavrsetka)
+        ORDER BY a.naziv;
+
     """)
     data = cur.fetchall()
     cur.close()
@@ -51,7 +56,7 @@ def fetch_dnevnik():
         return data
 
     except Exception as e:
-        print("Greška u fetch_dnevnik:", e)
+        print("Greška u evidenciji")
         return []
 
     finally:
@@ -73,7 +78,7 @@ def dodaj_unos(radnik_id, aktivnost_id, datum, sati, opis):
 
     except Exception as e:
         conn.rollback()
-        print("Greška pri unosu rada:", e)
+        print("Greška kod evidencije")
         return str(e)
 
     finally:
