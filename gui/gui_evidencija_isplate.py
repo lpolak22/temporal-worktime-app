@@ -5,8 +5,12 @@ import datetime
 from db.evidencija_isplate_db import fetch_detalji_isplate
 
 def isplate_window(radnici, isplate):
-    headings = ["ID", "Radnik", "Datum isplate", "Ukupni sati", "Ukupni trošak (€)"]
+    headings = ["Radnik", "Datum isplate", "Ukupni sati", "Ukupni trošak (€)"]
     
+    isplate_table = [
+        [i[2], i[3], i[4], i[5]] for i in isplate
+    ]
+
     layout = [
         [sg.Text("Pregled isplata", font=("Arial", 14))],
 
@@ -18,7 +22,7 @@ def isplate_window(radnici, isplate):
         [sg.HorizontalSeparator()],
 
         [sg.Table(
-            values=isplate,
+            values=isplate_table,
             headings=headings,
             auto_size_columns=False,
             num_rows=15,
@@ -50,11 +54,15 @@ def run_isplate_window():
                 win["STATUS"].update("Odaberi radnika za filter", text_color="orange")
                 continue
             radnik_id = next(r[0] for r in radnici if r[1] == values["RADNIK"])
-            win["TBL_ISPLATE"].update(values=fetch_isplate(radnik_id))
+            filtrirane_isplate = fetch_isplate(radnik_id)
+            filtrirani_table = [[i[2], i[3], i[4], i[5]] for i in filtrirane_isplate]
+            win["TBL_ISPLATE"].update(values=filtrirani_table)
             win["STATUS"].update(f"Prikaz isplata za {values['RADNIK']}", text_color="white")
 
         elif event == "Očisti filter":
-            win["TBL_ISPLATE"].update(values=fetch_isplate())
+            isplate = fetch_isplate()
+            isplate_table = [[i[2], i[3], i[4], i[5]] for i in isplate]
+            win["TBL_ISPLATE"].update(values=isplate_table)
             win["RADNIK"].update("")
             win["STATUS"].update("Filter uklonjen", text_color="white")
 
@@ -65,7 +73,6 @@ def run_isplate_window():
 
             isplata = fetch_isplate()[selected[0]]
 
-            isplata_id = isplata[0]
             radnik_id = isplata[1]
             radnik_ime = isplata[2]
             datum_isplate = isplata[3]
@@ -77,7 +84,7 @@ def run_isplate_window():
 
             popup_layout = [
                 [sg.Text(f"Radnik: {radnik_ime}", font=("Arial", 12, "bold"))],
-                [sg.Text(f"Razdoblje: {od} – {do}")],
+                [sg.Text(f"Razdoblje: {od} - {do}")],
 
                 [sg.Table(
                     values=detalji,

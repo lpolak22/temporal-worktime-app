@@ -2,7 +2,11 @@ import PySimpleGUI as sg
 from db.evidencija_satnice_db import *
 
 def satnice_window(radnici, satnice):
-    headings = ["ID", "Radnik", "Vrijedi od", "Vrijedi do", "Iznos €/sat"]
+    headings = ["Radnik", "Vrijedi od", "Vrijedi do", "Iznos €/sat"]
+
+    satnice_table = [
+        [s[1], s[2], s[3], s[4]] for s in satnice
+    ]
 
     layout = [
         [sg.Text("Satnice radnika", font=("Arial", 14))],
@@ -18,7 +22,7 @@ def satnice_window(radnici, satnice):
         [sg.HorizontalSeparator()],
 
         [sg.Table(
-            values=satnice,
+            values=satnice_table,
             headings=headings,
             auto_size_columns=False,
             num_rows=10,
@@ -61,8 +65,15 @@ def run_satnice_window():
 
             if result is True:
                 win["STATUS"].update("Satnica spremljena", text_color="white")
-                win["TBL_SATNICE"].update(values=fetch_satnice())
+                satnice = fetch_satnice()
+
+                satnice_table = [
+                    [s[1], s[2], s[3], s[4]] for s in satnice
+                ]
+                
+                win["TBL_SATNICE"].update(values=satnice_table)
+
                 for k in ["RADNIK", "VRIJEDI_OD", "IZNOS"]:
                     win[k].update("")
             else:
-                win["STATUS"].update(result, text_color="orange")
+                win["STATUS"].update("Greška satnica", text_color="orange")

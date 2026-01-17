@@ -2,8 +2,8 @@ import PySimpleGUI as sg
 from db.ugovor_aktivnost_db import *
 
 def ugovori_aktivnosti_window(narucitelji, ugovori, aktivnosti, stanja):
-    heading_ug = ["ID", "Naziv", "Naručitelj", "Početak", "Završetak"]
-    heading_act = ["ID", "Naziv", "Planirani sati", "Stanje"]
+    heading_ug = ["Naziv", "Naručitelj", "Početak", "Završetak"]
+    heading_act = ["Naziv", "Planirani sati", "Stanje"]
 
     layout = [
         [sg.Text("Ugovori i aktivnosti", font=("Arial", 14))],
@@ -46,7 +46,7 @@ def ugovori_aktivnosti_window(narucitelji, ugovori, aktivnosti, stanja):
                 auto_size_columns=True,
                 num_rows=6,
                 key="AKT_TBL",
-                select_mode="browse"
+                select_mode="browse",
             )],
 
             [sg.Text("Promjena stanja"),
@@ -64,10 +64,21 @@ def ugovori_aktivnosti_window(narucitelji, ugovori, aktivnosti, stanja):
 def run_ugovori_aktivnosti_window():
     narucitelji = fetch_narucitelji()
     stanja = fetch_stanja()
-    ugovori = fetch_ugovori()
-    aktivnosti = []
 
-    win = ugovori_aktivnosti_window(narucitelji, ugovori, aktivnosti, stanja)
+    ugovori_data = fetch_ugovori()
+    aktivnosti_data = []
+
+    ugovori_table = [
+        [u[1], u[2], u[3], u[4]]
+        for u in ugovori_data
+    ]
+
+    win = ugovori_aktivnosti_window(
+        narucitelji,
+        ugovori_table,
+        [],
+        stanja
+    )
 
     trenutno_odabrani_ugovor = None
 
@@ -87,22 +98,31 @@ def run_ugovori_aktivnosti_window():
                     values["UG_DO"]
                 ):
                     win["STATUS"].update("Ugovor uspješno dodan", text_color="white")
-                    win["UGOVOR_TBL"].update(values=fetch_ugovori())
 
-                    for key in ["UG_NAZIV", "UG_OD", "UG_DO", "NARUCITELJ"]:
-                        win[key].update("")
+                    ugovori_data = fetch_ugovori()
+                    ugovori_table = [
+                        [u[1], u[2], u[3], u[4]]
+                        for u in ugovori_data
+                    ]
+                    win["UGOVOR_TBL"].update(values=ugovori_table)
+
                 else:
                     win["STATUS"].update("Greška pri dodavanju ugovora", text_color="orange")
-            else:
-                win["STATUS"].update("Popuni sva obavezna polja ugovora", text_color="orange")
 
         elif event == "UGOVOR_TBL":
             selected = values["UGOVOR_TBL"]
             if selected:
-                ugovor_id = fetch_ugovori()[selected[0]][0]
+                ugovor_id = ugovori_data[selected[0]][0]
                 trenutno_odabrani_ugovor = ugovor_id
-                win["AKT_TBL"].update(values=fetch_aktivnosti(ugovor_id))
-                win["STATUS"].update(f"Odabran ugovor ID {ugovor_id}", text_color="white")
+
+                aktivnosti_data = fetch_aktivnosti(ugovor_id)
+                aktivnosti_table = [
+                    [a[1], a[2], a[3]]
+                    for a in aktivnosti_data
+                ]
+
+                win["AKT_TBL"].update(values=aktivnosti_table)
+                win["STATUS"].update("Ugovor odabran", text_color="white")
 
 
         elif event == "Dodaj aktivnost":
@@ -110,26 +130,29 @@ def run_ugovori_aktivnosti_window():
                 win["STATUS"].update("Najprije odaberi ugovor", text_color="orange")
                 continue
 
-            if values["AKT_NAZIV"] and values["AKT_SATI"] and values["AKT_STANJE"]:
-                if not values["AKT_SATI"].replace('.', '', 1).isdigit():
-                    win["STATUS"].update("Planirani sati moraju biti broj", text_color="orange")
-                    continue
-
-                if dodaj_aktivnost(
-                    trenutno_odabrani_ugovor,
-                    values["AKT_NAZIV"],
-                    values["AKT_SATI"],
-                    values["AKT_STANJE"]
-                ):
-                    win["STATUS"].update("Aktivnost dodana", text_color="white")
-                    win["AKT_TBL"].update(values=fetch_aktivnosti(trenutno_odabrani_ugovor))
-
-                    for key in ["AKT_NAZIV", "AKT_SATI", "AKT_STANJE"]:
-                        win[key].update("")
-                else:
-                    win["STATUS"].update("Greška pri dodavanju aktivnosti", text_color="orange")
-            else:
+            if not (values["AKT_NAZIV"] and values["AKT_SATI"] and values["AKT_STANJE"]):
                 win["STATUS"].update("Popuni sva polja aktivnosti", text_color="orange")
+                continue
+
+            if not values["AKT_SATI"].replace('.', '', 1).isdigit():
+                win["STATUS"].update("Planirani sati moraju biti broj", text_color="orange")
+                continue
+
+            if dodaj_aktivnost(
+                trenutno_odabrani_ugovor,
+                values["AKT_NAZIV"],
+                values["AKT_SATI"],
+                values["AKT_STANJE"]
+            ):
+                aktivnosti_data = fetch_aktivnosti(trenutno_odabrani_ugovor)
+                aktivnosti_table = [
+                    [a[1], a[2], a[3]]
+                    for a in aktivnosti_data
+                ]
+                win["AKT_TBL"].update(values=aktivnosti_table)
+                win["STATUS"].update("Aktivnost dodana", text_color="white")
+            else:
+                win["STATUS"].update("Greška pri dodavanju aktivnosti", text_color="orange")
 
         elif event == "Promijeni stanje":
             akt_sel = values["AKT_TBL"]
@@ -146,10 +169,15 @@ def run_ugovori_aktivnosti_window():
                 win["STATUS"].update("Odaberi novo stanje", text_color="orange")
                 continue
 
-            akt_id = fetch_aktivnosti(trenutno_odabrani_ugovor)[akt_sel[0]][0]
+            akt_id = aktivnosti_data[akt_sel[0]][0]
 
             if promijeni_stanje(akt_id, values["NOVO_STANJE"]):
+                aktivnosti_data = fetch_aktivnosti(trenutno_odabrani_ugovor)
+                aktivnosti_table = [
+                    [a[1], a[2], a[3]]
+                    for a in aktivnosti_data
+                ]
+                win["AKT_TBL"].update(values=aktivnosti_table)
                 win["STATUS"].update("Stanje aktivnosti promijenjeno", text_color="white")
-                win["AKT_TBL"].update(values=fetch_aktivnosti(trenutno_odabrani_ugovor))
             else:
                 win["STATUS"].update("Greška pri promjeni stanja", text_color="orange")

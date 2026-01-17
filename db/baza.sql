@@ -72,7 +72,7 @@ CREATE TABLE dnevnik_rada (
   datum_rada DATE NOT NULL,
   sati NUMERIC(10,2) NOT NULL CHECK (sati > 0 AND sati <= 24),
   opis TEXT,
-  CONSTRAINT uq_radnik_datum UNIQUE (radnik_id, datum_rada)
+  CONSTRAINT uq_radnik_aktivnost_datum UNIQUE(radnik_id, aktivnost_id, datum_rada)
 );
 
 CREATE TABLE isplate (
@@ -82,7 +82,8 @@ CREATE TABLE isplate (
   datum_isplate DATE NOT NULL DEFAULT CURRENT_DATE,
   broj_unosa INTEGER NOT NULL CHECK (broj_unosa > 0),
   ukupno_sati NUMERIC(10,2) NOT NULL CHECK (ukupno_sati >= 0),
-  ukupni_trosak NUMERIC(12,2) NOT NULL CHECK (ukupni_trosak >= 0)
+  ukupni_trosak NUMERIC(12,2) NOT NULL CHECK (ukupni_trosak >= 0),
+  CONSTRAINT uq_isplata_radnik_datum UNIQUE(radnik_id, datum_isplate)
 );
 
 CREATE INDEX idx_dnevnik_rada_radnik_datum
@@ -95,26 +96,27 @@ CREATE OR REPLACE FUNCTION trg_zabrani_dupli_unos()
 RETURNS TRIGGER
 LANGUAGE plpgsql
 AS $$
-DECLARE postoji INT;
-
+DECLARE
+    postoji INT;
 BEGIN
-  SELECT COUNT(*)
-  INTO postoji
-  FROM dnevnik_rada
-  WHERE radnik_id = NEW.radnik_id
-    AND datum_rada = NEW.datum_rada;
+    SELECT COUNT(*)
+      INTO postoji
+      FROM dnevnik_rada
+     WHERE radnik_id = NEW.radnik_id
+       AND aktivnost_id = NEW.aktivnost_id
+       AND datum_rada = NEW.datum_rada;
 
-  IF postoji > 0 THEN
-    RAISE EXCEPTION 'Radnik % već ima unos za datum %', NEW.radnik_id, NEW.datum_rada;
-  END IF;
+    IF postoji > 0 THEN
+        RAISE EXCEPTION 'Radnik % već ima unos za aktivnost % na datum %', 
+            NEW.radnik_id, NEW.aktivnost_id, NEW.datum_rada;
+    END IF;
 
-  RETURN NEW;
+    RETURN NEW;
 END;
 $$;
 
 CREATE TRIGGER t_dupli_unos
-BEFORE INSERT OR UPDATE
-ON dnevnik_rada
+BEFORE INSERT OR UPDATE ON dnevnik_rada
 FOR EACH ROW
 EXECUTE FUNCTION trg_zabrani_dupli_unos();
 
@@ -278,6 +280,97 @@ ON dnevnik_rada
 FOR EACH ROW
 EXECUTE FUNCTION trg_provjera_unosa_rada();
 
+CREATE OR REPLACE FUNCTION azuriraj_isplatu_tjedno_f(radnik BIGINT, datum DATE)
+RETURNS VOID
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    start_tjedna DATE;
+    end_tjedna DATE;
+    ukupno_sati NUMERIC(10,2);
+    ukupni_trosak NUMERIC(12,2);
+    v_ugovor_id BIGINT;
+BEGIN
+    start_tjedna := date_trunc('week', datum + INTERVAL '1 day')::DATE;
+    end_tjedna := start_tjedna + INTERVAL '7 days';
+
+    SELECT a.ugovor_id
+    INTO v_ugovor_id
+    FROM aktivnosti a
+    JOIN dnevnik_rada dr ON a.aktivnost_id = dr.aktivnost_id
+    WHERE dr.radnik_id = radnik
+      AND dr.datum_rada >= start_tjedna
+      AND dr.datum_rada < end_tjedna
+    LIMIT 1;
+
+    IF v_ugovor_id IS NOT NULL THEN
+        SELECT COALESCE(SUM(sati),0)
+        INTO ukupno_sati
+        FROM dnevnik_rada
+        WHERE radnik_id = radnik
+          AND datum_rada >= start_tjedna
+          AND datum_rada < end_tjedna;
+
+        SELECT COALESCE(SUM(dr.sati * sr.iznos_eur_po_satu),0)
+        INTO ukupni_trosak
+        FROM dnevnik_rada dr
+        JOIN satnice_radnika sr
+          ON sr.radnik_id = dr.radnik_id
+         AND dr.datum_rada >= sr.vrijedi_od
+         AND dr.datum_rada < sr.vrijedi_do
+        WHERE dr.radnik_id = radnik
+          AND dr.datum_rada >= start_tjedna
+          AND dr.datum_rada < end_tjedna;
+
+        INSERT INTO isplate(radnik_id, ugovor_id, datum_isplate, broj_unosa, ukupno_sati, ukupni_trosak)
+        SELECT
+            radnik,
+            v_ugovor_id,
+            end_tjedna::DATE - 1,
+            COUNT(*),
+            ukupno_sati,
+            ukupni_trosak
+        FROM dnevnik_rada
+        WHERE radnik_id = radnik
+          AND datum_rada >= start_tjedna
+          AND datum_rada < end_tjedna
+        ON CONFLICT (radnik_id, datum_isplate)
+        DO UPDATE SET
+            broj_unosa = EXCLUDED.broj_unosa,
+            ukupno_sati = EXCLUDED.ukupno_sati,
+            ukupni_trosak = EXCLUDED.ukupni_trosak;
+    END IF;
+END;
+$$;
+
+
+CREATE OR REPLACE FUNCTION trg_azuriraj_isplatu_po_satnici()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    dr RECORD;
+BEGIN
+    FOR dr IN
+        SELECT unos_id, radnik_id, datum_rada
+        FROM dnevnik_rada
+        WHERE radnik_id = NEW.radnik_id
+          AND datum_rada >= NEW.vrijedi_od
+          AND datum_rada < NEW.vrijedi_do
+    LOOP
+        PERFORM azuriraj_isplatu_tjedno_f(dr.radnik_id, dr.datum_rada);
+    END LOOP;
+
+    RETURN NEW;
+END;
+$$;
+
+CREATE TRIGGER t_azuriraj_isplatu_po_satnici
+AFTER INSERT OR UPDATE ON satnice_radnika
+FOR EACH ROW
+EXECUTE FUNCTION trg_azuriraj_isplatu_po_satnici();
+
+
 INSERT INTO stanja_aktivnosti(naziv)
 VALUES
 ('Nije započeto'),
@@ -319,7 +412,7 @@ VALUES
 
 INSERT INTO ugovori(narucitelj_id, naziv, datum_pocetka, datum_zavrsetka)
 VALUES
-(1, 'Razvoj sustava evidencije rada', '2025-11-01', '2026-03-31'),
+(1, 'Razvoj sustava evidencije rada', '2025-11-01', '2026-01-16'),
   (2, 'Razvoj web aplikacije', '2025-12-01', '2026-03-31'),
   (3, 'Implementacija ERP sustava', '2025-11-15', '2026-03-31');
 

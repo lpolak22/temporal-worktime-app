@@ -2,9 +2,8 @@ import PySimpleGUI as sg
 from db.radnici_db import *
 
 def radnici_window(pozicije, radnici_data):
-    heading = ["ID", "Ime", "Prezime", "Pozicija", "Datum zaposlenja"]
-    table_data = [[r[0], r[1].split()[0], r[1].split()[1], r[2], r[3]] for r in radnici_data]
-    radnici_data = fetch_radnici()
+    heading = ["Ime", "Prezime", "Pozicija", "Datum zaposlenja"]
+    table_data = [[r[1].split()[0], r[1].split()[1], r[2], r[3]] for r in radnici_data]
     layout = [
         [sg.Text("Upravljanje radnicima", font=("Arial", 14))],
         [sg.Frame("Dodavanje novog radnika", [
@@ -23,8 +22,6 @@ def radnici_window(pozicije, radnici_data):
                 select_mode='browse',
                 num_rows=10,
                 key="RADNIK_LISTA",
-                alternating_row_color="#7260D7",
-                selected_row_colors=('white', '#98D8C8'),
                 enable_events=False
             )],
             [sg.Button("Obriši radnika")]
@@ -55,9 +52,8 @@ def run_radnici_window():
                         rad_win["STATUS"].update("Dodan radnik", text_color="white")
                         for key in ["IME", "PREZIME", "DATUM", "POZICIJA"]:
                             rad_win[key].update("")
-                        new_data = fetch_radnici()
-                        heading = ["ID", "Ime", "Prezime", "Pozicija", "Datum zaposlenja"]
-                        table_data = [[r[0], r[1].split()[0], r[1].split()[1], r[2], r[3]] for r in new_data]
+                        radnici_data = fetch_radnici()
+                        table_data = [[r[1].split()[0], r[1].split()[1], r[2], r[3]] for r in radnici_data]
                         rad_win["RADNIK_LISTA"].update(values=table_data)
                     else:
                         rad_win["STATUS"].update("Greška pri dodavanju", text_color="orange")

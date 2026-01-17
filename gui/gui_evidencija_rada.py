@@ -2,7 +2,11 @@ import PySimpleGUI as sg
 from db.evidencija_rada_db import *
 
 def evidencija_rada_window(radnici, aktivnosti, dnevnik):
-    headings = ["ID", "Radnik", "Aktivnost", "Datum", "Sati", "Opis"]
+    headings = ["Radnik", "Aktivnost", "Datum", "Sati", "Opis"]
+
+    dnevnik_table = [
+        [d[1], d[2], d[3], d[4], d[5]] for d in dnevnik
+    ]
 
     layout = [
         [sg.Text("Evidencija rada", font=("Arial", 14))],
@@ -28,7 +32,7 @@ def evidencija_rada_window(radnici, aktivnosti, dnevnik):
         [sg.HorizontalSeparator()],
 
         [sg.Table(
-            values=dnevnik,
+            values=dnevnik_table,
             headings=headings,
             auto_size_columns=False,
             num_rows=8,
@@ -106,9 +110,13 @@ def run_evidencija_rada_window():
 
             if result is True:
                 win["STATUS"].update("Unos rada spremljen", text_color="white")
-                win["TBL_RAD"].update(values=fetch_dnevnik())
+                dnevnik = fetch_dnevnik()
+                dnevnik_table = [
+                    [d[1], d[2], d[3], d[4], d[5]] for d in dnevnik
+                ]
+                win["TBL_RAD"].update(values=dnevnik_table)
 
                 for k in ["RADNIK", "AKTIVNOST", "DATUM", "SATI", "OPIS"]:
                     win[k].update("")
             else:
-                win["STATUS"].update(result, text_color="orange")
+                win["STATUS"].update("Greška evidencija rada", text_color="orange")
