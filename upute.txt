@@ -1,0 +1,13 @@
+
+python -m venv venv
+
+Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned
+
+venv\Scripts\activate
+
+python -m pip uninstall -y PySimpleGUI
+python -m pip cache purge
+python -m pip install --upgrade --extra-index-url https://PySimpleGUI.net/install PySimpleGUI
+pip freeze > requirements.txt
+
+python main.py
