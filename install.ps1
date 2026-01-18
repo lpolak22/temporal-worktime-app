@@ -1,8 +1,8 @@
 # Pokretanje:
-# powershell -ExecutionPolicy RemoteSigned -File install.ps1
+# powershell -ExecutionPolicy Bypass -File install.ps1
 
 # opcija 2 je da se pozicionirate u root folder te napisete sljedece 2 linije:
-# Set-ExecutionPolicy -Scope Process -ExecutionPolicy RemoteSigned
+# Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 # .\install.ps1
 
 Write-Host "=== Temporal Worktime App Installer ==="
@@ -68,14 +68,31 @@ if (-not (Test-Path "venv")) {
 Write-Host "Aktiviram virtualno okruženje..."
 .\venv\Scripts\Activate.ps1
 
-Write-Host "Instaliram Python zavisnosti..."
+Write-Host "Provjeravam pip..."
+try {
+    python -m pip --version
+} catch {
+    Write-Host "pip nije instaliran, instaliram..."
+    python -m ensurepip --upgrade
+}
+
+Write-Host "Ažuriram pip..."
 python -m pip install --upgrade pip
 
 pip uninstall -y PySimpleGUI | Out-Null
 pip cache purge | Out-Null
 pip install --upgrade --extra-index-url https://PySimpleGUI.net/install PySimpleGUI
 
+Write-Host "Instaliram Python zavisnosti..."
 pip install -r requirements.txt
+
+Write-Host "Provjeravam psycopg2..."
+try {
+    python -c "import psycopg2" 
+} catch {
+    Write-Host "psycopg2 nije instaliran, instaliram..."
+    pip install psycopg2-binary
+}
 
 Write-Host "Provjeravam konekciju na PostgreSQL..."
 
