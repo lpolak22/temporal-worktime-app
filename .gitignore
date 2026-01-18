@@ -8,9 +8,6 @@ __pycache__/
 *$py.class
 *.so
 
-requirements.txt
-upute.txt
-
 .vscode/
 .idea/
 *.swp

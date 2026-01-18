@@ -1,0 +1,10 @@
+Instalacija je moguća samo na uređajima koji imaju Windows operativni sustav.
+
+Za pokretanje instalacije potrebno je:
+- pozicionirati se u root folder (onaj u kojem se nalazi ovaj dokument)
+- upisati naredbu: Set-ExecutionPolicy -Scope Process -ExecutionPolicy RemoteSigned
+- upisati naredbu: .\install.ps1
+
+Za pokretanje programa potrebno je:
+- ostati u root direktoriju koristeći venv (upaljen je automatski nakon  instalacije, ali moguće je i napisati: venv\Scripts\activate)
+- upisati naredbu: python main.py
