@@ -8,3 +8,18 @@ Za pokretanje instalacije potrebno je:
 Za pokretanje programa potrebno je:
 - ostati u root direktoriju koristeći venv (upaljen je automatski nakon  instalacije, ali moguće je i napisati: venv\Scripts\activate)
 - upisati naredbu: python main.py
+
+
+NAPOMENA (redoslijed moje instalacije): 
+python -m venv venv
+
+Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned
+
+venv\Scripts\activate
+
+python -m pip uninstall -y PySimpleGUI
+python -m pip cache purge
+python -m pip install --upgrade --extra-index-url https://PySimpleGUI.net/install PySimpleGUI
+pip freeze > requirements.txt
+
+python main.py
